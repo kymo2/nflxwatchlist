@@ -136,7 +136,7 @@ extension CoreDataManager {
         let fetchRequest: NSFetchRequest<SavedCatalogItem> = SavedCatalogItem.fetchRequest()
         fetchRequest.predicate = NSPredicate(format: "itemId == %@", itemId)
         fetchRequest.fetchLimit = 1
-        
+
         do {
             let count = try context.count(for: fetchRequest)
             return count > 0
@@ -144,6 +144,22 @@ extension CoreDataManager {
             return false
         }
 
+    }
+
+    func deleteAllSavedItems() {
+        let fetchRequest: NSFetchRequest<NSFetchRequestResult> = SavedCatalogItem.fetchRequest()
+        let deleteRequest = NSBatchDeleteRequest(fetchRequest: fetchRequest)
+        deleteRequest.resultType = .resultTypeObjectIDs
+
+        do {
+            let result = try context.execute(deleteRequest) as? NSBatchDeleteResult
+            if let deletedObjectIDs = result?.result as? [NSManagedObjectID], !deletedObjectIDs.isEmpty {
+                let changes: [AnyHashable: Any] = [NSDeletedObjectsKey: deletedObjectIDs]
+                NSManagedObjectContext.mergeChanges(fromRemoteContextSave: changes, into: [context])
+            }
+        } catch {
+            print("Failed to delete all saved items: \(error.localizedDescription)")
+        }
     }
 }
     
