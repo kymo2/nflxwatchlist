@@ -36,6 +36,15 @@ struct WatchlistScreen: View {
             }
         }
         .navigationTitle("Watchlist")
+        .toolbar {
+            ToolbarItem(placement: .navigationBarTrailing) {
+                if !watchlistViewModel.savedItems.isEmpty {
+                    Button("Clear All") {
+                        watchlistViewModel.clearWatchlist()
+                    }
+                }
+            }
+        }
         .onAppear {
             watchlistViewModel.fetchSavedItems()
         }
