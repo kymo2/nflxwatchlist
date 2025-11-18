@@ -1,0 +1,17 @@
+<?xml version="1.0" encoding="UTF-8" standalone="yes"?>
+<model type="com.apple.IDECoreDataModeler.DataModel" documentVersion="1.0" lastSavedToolsVersion="23605" systemVersion="24C101" minimumToolsVersion="Automatic" sourceLanguage="Swift" usedWithSwiftData="YES" userDefinedModelVersionIdentifier="">
+    <entity name="SavedCatalogItem" representedClassName="SavedCatalogItem" syncable="YES" codeGenerationType="class">
+        <attribute name="img" optional="YES" attributeType="String"/>
+        <attribute name="itemId" optional="YES" attributeType="String"/>
+        <attribute name="synopsis" optional="YES" attributeType="String"/>
+        <attribute name="title" optional="YES" attributeType="String"/>
+        <relationship name="countryAvailability" optional="YES" toMany="YES" deletionRule="Cascade" destinationEntity="SavedCountryAvailability" inverseName="savedCatalogItem" inverseEntity="SavedCountryAvailability"/>
+    </entity>
+    <entity name="SavedCountryAvailability" representedClassName="SavedCountryAvailability" syncable="YES" codeGenerationType="class">
+        <attribute name="audio" optional="YES" attributeType="String"/>
+        <attribute name="country" optional="YES" attributeType="String"/>
+        <attribute name="countryCode" optional="YES" attributeType="String"/>
+        <attribute name="subtitle" optional="YES" attributeType="String"/>
+        <relationship name="savedCatalogItem" optional="YES" maxCount="1" deletionRule="Nullify" destinationEntity="SavedCatalogItem" inverseName="countryAvailability" inverseEntity="SavedCatalogItem"/>
+    </entity>
+</model>
