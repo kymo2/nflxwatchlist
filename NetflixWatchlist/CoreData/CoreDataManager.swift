@@ -65,25 +65,25 @@ class CoreDataManager: ObservableObject {
         if self.itemExists(itemId: item.itemId, in: context) {
             return
         }
-        
-        context.perform {
+
+        context.performAndWait {
             let savedItem = SavedCatalogItem(context: self.context)
 
             savedItem.itemId = item.itemId
             savedItem.title = item.title
             savedItem.synopsis = item.synopsis
             savedItem.img = item.img
-    
+
             let countrySet = NSMutableSet()
 
             for country in availability {
                 let savedCountry = SavedCountryAvailability(context: self.context)
-                
+
                 savedCountry.countryCode = country.countryCode
                 savedCountry.country = country.country
                 savedCountry.audio = country.audio
                 savedCountry.subtitle = country.subtitle
-                
+
                 savedCountry.savedCatalogItem = savedItem
                 countrySet.add(savedCountry)
             }
