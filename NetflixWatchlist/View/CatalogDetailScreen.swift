@@ -13,6 +13,10 @@ struct CatalogDetailScreen: View {
 
     var body: some View {
         VStack {
+            Text("Remaining API Calls: \(viewModel.remainingApiCalls)")
+                .font(.title3)
+                .fontWeight(.semibold)
+
             AsyncImage(url: URL(string: catalogItem.img)) { image in
                 image
                     .resizable()
@@ -22,8 +26,8 @@ struct CatalogDetailScreen: View {
             }
             .frame(width: 150, height: 225)
             .cornerRadius(8)
-
-            Text(catalogItem.title.decodedHTMLEntities())
+            
+            Text(catalogItem.title)
                 .font(.title)
                 .fontWeight(.bold)
 
