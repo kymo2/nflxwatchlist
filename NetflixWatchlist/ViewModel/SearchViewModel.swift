@@ -9,19 +9,19 @@ import Foundation
 import CoreData
 
 class SearchViewModel: ObservableObject {
-    @Published var apiCallCount: Int = 0
+    @Published var remainingApiCalls: Int = 0
     @Published var searchResults: [CatalogItem] = []
     @Published var errorMessage: String?
     @Published var selectedAvailability: [CountryAvailability] = []
     @Published var savedItems: [SavedCatalogItem] = []
-    @Published var watchlistMessage: String?
+    @Published var pendingSavedItemIDs: Set<String> = []
 
     private let service = UnogsService()
     private let coreDataManager = CoreDataManager.shared
 
     init() {
         fetchSavedItems()
-        apiCallCount = service.remainingApiCalls()
+        remainingApiCalls = service.remainingApiCalls()
     }
 
     func searchCatalog(title: String) {
@@ -52,7 +52,7 @@ class SearchViewModel: ObservableObject {
                 }
             }
         }
-        apiCallCount = service.remainingApiCalls()
+        remainingApiCalls = service.remainingApiCalls()
     }
 
     func fetchAvailability(for catalogItem: CatalogItem) {
@@ -61,16 +61,17 @@ class SearchViewModel: ObservableObject {
                 self?.selectedAvailability = availability
             }
         }
-        apiCallCount = service.remainingApiCalls()
+        remainingApiCalls = service.remainingApiCalls()
     }
 
     func saveToWatchlist(item: CatalogItem) {
         print("🌍 Fetching country availability before saving \(item.title)")
 
         guard !isItemSaved(item) else {
-            watchlistMessage = "Already on watchlist"
             return
         }
+
+        pendingSavedItemIDs.insert(item.itemId)
 
         service.fetchCatalogItemAvailability(itemId: item.itemId) { [weak self] availability in
             DispatchQueue.main.async {
@@ -78,15 +79,18 @@ class SearchViewModel: ObservableObject {
 
                 self?.coreDataManager.saveCatalogItem(item: item, availability: availability) // ✅ Save movie + country data
                 self?.fetchSavedItems() // ✅ Refresh saved items after saving
-                self?.watchlistMessage = "Added to watchlist"
+                self?.pendingSavedItemIDs.remove(item.itemId)
             }
         }
+        remainingApiCalls = service.remainingApiCalls()
     }
 
 
 
     func fetchSavedItems() {
         savedItems = coreDataManager.fetchSavedItems()
+        let savedIDs = Set(savedItems.compactMap { $0.itemId })
+        pendingSavedItemIDs.subtract(savedIDs)
 
 //        // ✅ Print to console for debugging
 //        print("🎥 Saved Movies in Core Data:")
@@ -101,12 +105,12 @@ class SearchViewModel: ObservableObject {
     }
 
     func removeFromWatchlist(item: CatalogItem) {
+        pendingSavedItemIDs.remove(item.itemId)
         coreDataManager.deleteSavedItem(itemId: item.itemId)
         fetchSavedItems()
-        watchlistMessage = "Removed from watchlist"
     }
 
     func isItemSaved(_ item: CatalogItem) -> Bool {
-        savedItems.contains(where: { $0.itemId == item.itemId })
+        pendingSavedItemIDs.contains(item.itemId) || savedItems.contains(where: { $0.itemId == item.itemId })
     }
 }
