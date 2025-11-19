@@ -59,7 +59,7 @@ struct CatalogDetailScreen: View {
                 }
             }
         }
-        .navigationTitle("Movie Details")
+        .navigationTitle("Title Details")
         .onAppear {
             viewModel.fetchAvailability(for: catalogItem)
             viewModel.fetchSavedItems()

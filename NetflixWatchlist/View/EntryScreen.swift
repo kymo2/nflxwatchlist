@@ -26,10 +26,6 @@ struct EntryScreen: View {
                 .frame(width: 100, height: 100)
                 .padding()
             
-            Text("Netflix Watchlist")
-                .font(.largeTitle)
-                .fontWeight(.bold)
-
             Spacer()
             
             TextField("Search for a Movie or TV Show", text: $searchQuery, onCommit: {
