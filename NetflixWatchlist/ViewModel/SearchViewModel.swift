@@ -14,6 +14,7 @@ class SearchViewModel: ObservableObject {
     @Published var errorMessage: String?
     @Published var selectedAvailability: [CountryAvailability] = []
     @Published var savedItems: [SavedCatalogItem] = []
+    @Published var watchlistMessage: String?
     @Published var pendingSavedItemIDs: Set<String> = []
 
     private let service = UnogsService()
@@ -80,6 +81,7 @@ class SearchViewModel: ObservableObject {
                 self?.coreDataManager.saveCatalogItem(item: item, availability: availability) // ✅ Save movie + country data
                 self?.fetchSavedItems() // ✅ Refresh saved items after saving
                 self?.pendingSavedItemIDs.remove(item.itemId)
+                self?.watchlistMessage = "Added to watchlist"
             }
         }
         remainingApiCalls = service.remainingApiCalls()
