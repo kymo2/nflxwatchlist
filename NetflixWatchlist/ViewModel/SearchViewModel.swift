@@ -69,7 +69,6 @@ class SearchViewModel: ObservableObject {
         print("🌍 Fetching country availability before saving \(item.title)")
 
         guard !isItemSaved(item) else {
-            watchlistMessage = "Already on watchlist"
             return
         }
 
@@ -111,7 +110,6 @@ class SearchViewModel: ObservableObject {
         pendingSavedItemIDs.remove(item.itemId)
         coreDataManager.deleteSavedItem(itemId: item.itemId)
         fetchSavedItems()
-        watchlistMessage = "Removed from watchlist"
     }
 
     func isItemSaved(_ item: CatalogItem) -> Bool {
