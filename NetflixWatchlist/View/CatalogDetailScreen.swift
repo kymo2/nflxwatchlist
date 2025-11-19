@@ -26,7 +26,7 @@ struct CatalogDetailScreen: View {
             }
             .frame(width: 150, height: 225)
             .cornerRadius(8)
-
+            
             Text(catalogItem.title)
                 .font(.title)
                 .fontWeight(.bold)
