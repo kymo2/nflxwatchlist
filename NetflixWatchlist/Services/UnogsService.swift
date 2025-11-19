@@ -15,25 +15,34 @@ class UnogsService {
     private let userDefaults = UserDefaults.standard
     private let apiCallCountKey = "UnogsAPICallCount"
     private let lastResetDateKey = "UnogsLastResetDate"
+    private let pacificTimeZone = TimeZone(identifier: "America/Los_Angeles")
 
     init() {
         apiKey = Bundle.main.object(forInfoDictionaryKey: "API_KEY") as? String ?? ""
         apiHost = Bundle.main.object(forInfoDictionaryKey: "API_HOST") as? String ?? ""
         resetApiCountIfNewDay() // run check every time app runs
     }
-    
+
     func remainingApiCalls() -> Int {
-        return userDefaults.integer(forKey: apiCallCountKey)
+        resetApiCountIfNewDay()
+        let usedCalls = userDefaults.integer(forKey: apiCallCountKey)
+        return max(0, maxApiCallsPerDay - usedCalls)
     }
 
     private func incrementApiCallCount() {
-        let newCount = remainingApiCalls() + 1
-        userDefaults.set(newCount, forKey: apiCallCountKey)
+        resetApiCountIfNewDay()
+        let usedCalls = userDefaults.integer(forKey: apiCallCountKey)
+        userDefaults.set(min(maxApiCallsPerDay, usedCalls + 1), forKey: apiCallCountKey)
     }
-    
+
     private func resetApiCountIfNewDay() {
         let lastResetDate = userDefaults.object(forKey: lastResetDateKey) as? Date ?? Date.distantPast
-        if !Calendar.current.isDateInToday(lastResetDate) {
+        var calendar = Calendar(identifier: .gregorian)
+        if let pacificTimeZone {
+            calendar.timeZone = pacificTimeZone
+        }
+
+        if !calendar.isDate(Date(), inSameDayAs: lastResetDate) {
             userDefaults.set(0, forKey: apiCallCountKey)
             userDefaults.set(Date(), forKey: lastResetDateKey)
         }
@@ -85,7 +94,7 @@ class UnogsService {
 
                         return CatalogItem(
                             itemId: itemId,
-                            title: result["title"] as? String ?? "",
+                            title: (result["title"] as? String ?? "").decodedHTMLEntities(),
                             img: result["img"] as? String ?? "",
                             synopsis: (result["synopsis"] as? String ?? "").decodedHTMLEntities(),
                             availability: nil
