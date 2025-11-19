@@ -8,17 +8,18 @@ import SwiftUI
 
 struct EntryScreen: View {
     @State private var searchQuery = ""
+    @State private var isShowingResults = false
     @EnvironmentObject var viewModel: SearchViewModel
 
     var body: some View {
         VStack {
             Spacer()
             
-            Text("\(viewModel.apiCallCount)")
-                .font(.title)
-                .fontWeight(.bold)
+            Text("Remaining API Calls: \(viewModel.remainingApiCalls)")
+                .font(.title2)
+                .fontWeight(.semibold)
 
-            
+
             Image(systemName: "film") // Placeholder for logo
                 .resizable()
                 .scaledToFit()
@@ -32,17 +33,18 @@ struct EntryScreen: View {
             Spacer()
             
             TextField("Search for a Movie or TV Show", text: $searchQuery, onCommit: {
-                viewModel.searchCatalog(title: searchQuery)
+                let trimmedQuery = searchQuery.trimmingCharacters(in: .whitespacesAndNewlines)
+                guard !trimmedQuery.isEmpty else { return }
+
+                isShowingResults = true
+                viewModel.searchCatalog(title: trimmedQuery)
             })
             .textFieldStyle(RoundedBorderTextFieldStyle())
             .padding()
-            
+
             NavigationLink(
                 destination: SearchResultsScreen(),
-                isActive: Binding(
-                    get: { !viewModel.searchResults.isEmpty },
-                    set: { _ in }
-                )
+                isActive: $isShowingResults
             ) {
                 EmptyView()
             }
