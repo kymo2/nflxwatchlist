@@ -15,11 +15,11 @@ struct EntryScreen: View {
         VStack {
             Spacer()
             
-            Text("\(viewModel.apiCallCount)")
-                .font(.title)
-                .fontWeight(.bold)
+            Text("Remaining API Calls: \(viewModel.remainingApiCalls)")
+                .font(.title2)
+                .fontWeight(.semibold)
 
-            
+
             Image(systemName: "film") // Placeholder for logo
                 .resizable()
                 .scaledToFit()

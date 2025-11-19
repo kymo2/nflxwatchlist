@@ -16,9 +16,15 @@ struct WatchlistScreen: View {
                 ForEach(watchlistViewModel.savedItems, id: \.objectID) { item in
                     NavigationLink(destination: CatalogDetailScreen(catalogItem: item.toCatalogItem())) {
                         HStack {
-                            AsyncImage(url: URL(string: item.img ?? ""))
-                                .frame(width: 50, height: 75)
-                                .cornerRadius(8)
+                            AsyncImage(url: URL(string: item.img ?? "")) { image in
+                                image
+                                    .resizable()
+                                    .aspectRatio(contentMode: .fit)
+                            } placeholder: {
+                                Color.gray.opacity(0.2)
+                            }
+                            .frame(width: 50, height: 75)
+                            .cornerRadius(8)
 
                             VStack(alignment: .leading) {
                                 Text(item.title ?? "Unknown Title")
