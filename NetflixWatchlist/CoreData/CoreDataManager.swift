@@ -65,25 +65,25 @@ class CoreDataManager: ObservableObject {
         if self.itemExists(itemId: item.itemId, in: context) {
             return
         }
-        
-        context.perform {
+
+        context.performAndWait {
             let savedItem = SavedCatalogItem(context: self.context)
 
             savedItem.itemId = item.itemId
             savedItem.title = item.title
             savedItem.synopsis = item.synopsis
             savedItem.img = item.img
-    
+
             let countrySet = NSMutableSet()
 
             for country in availability {
                 let savedCountry = SavedCountryAvailability(context: self.context)
-                
+
                 savedCountry.countryCode = country.countryCode
                 savedCountry.country = country.country
                 savedCountry.audio = country.audio
                 savedCountry.subtitle = country.subtitle
-                
+
                 savedCountry.savedCatalogItem = savedItem
                 countrySet.add(savedCountry)
             }
@@ -136,7 +136,7 @@ extension CoreDataManager {
         let fetchRequest: NSFetchRequest<SavedCatalogItem> = SavedCatalogItem.fetchRequest()
         fetchRequest.predicate = NSPredicate(format: "itemId == %@", itemId)
         fetchRequest.fetchLimit = 1
-        
+
         do {
             let count = try context.count(for: fetchRequest)
             return count > 0
@@ -144,6 +144,22 @@ extension CoreDataManager {
             return false
         }
 
+    }
+
+    func deleteAllSavedItems() {
+        let fetchRequest: NSFetchRequest<NSFetchRequestResult> = SavedCatalogItem.fetchRequest()
+        let deleteRequest = NSBatchDeleteRequest(fetchRequest: fetchRequest)
+        deleteRequest.resultType = .resultTypeObjectIDs
+
+        do {
+            let result = try context.execute(deleteRequest) as? NSBatchDeleteResult
+            if let deletedObjectIDs = result?.result as? [NSManagedObjectID], !deletedObjectIDs.isEmpty {
+                let changes: [AnyHashable: Any] = [NSDeletedObjectsKey: deletedObjectIDs]
+                NSManagedObjectContext.mergeChanges(fromRemoteContextSave: changes, into: [context])
+            }
+        } catch {
+            print("Failed to delete all saved items: \(error.localizedDescription)")
+        }
     }
 }
     
