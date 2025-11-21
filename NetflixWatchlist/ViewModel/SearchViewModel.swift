@@ -14,6 +14,7 @@ class SearchViewModel: ObservableObject {
     @Published var errorMessage: String?
     @Published var selectedAvailability: [CountryAvailability] = []
     @Published var savedItems: [SavedCatalogItem] = []
+    @Published var watchlistMessage: String?
     @Published var pendingSavedItemIDs: Set<String> = []
 
     private let service = UnogsService()
@@ -77,6 +78,7 @@ class SearchViewModel: ObservableObject {
                 self?.remainingApiCalls = self?.service.remainingApiCalls() ?? 0
             }
         }
+        remainingApiCalls = service.remainingApiCalls()
     }
 
     func saveToWatchlist(item: CatalogItem) {
@@ -88,24 +90,17 @@ class SearchViewModel: ObservableObject {
 
         pendingSavedItemIDs.insert(item.itemId)
 
-        let cachedAvailability = item.availability ?? selectedAvailability
-
-        if !cachedAvailability.isEmpty {
-            coreDataManager.saveCatalogItem(item: item, availability: cachedAvailability)
-            fetchSavedItems()
-            pendingSavedItemIDs.remove(item.itemId)
-            return
-        }
-
-        service.fetchCatalogItemAvailability(itemId: item.itemId, countTowardsUsage: false) { [weak self] availability in
+        service.fetchCatalogItemAvailability(itemId: item.itemId) { [weak self] availability in
             DispatchQueue.main.async {
                 print("✅ Retrieved \(availability.count) country availability records for \(item.title)")
 
-                self?.coreDataManager.saveCatalogItem(item: item, availability: availability)
-                self?.fetchSavedItems()
+                self?.coreDataManager.saveCatalogItem(item: item, availability: availability) // ✅ Save movie + country data
+                self?.fetchSavedItems() // ✅ Refresh saved items after saving
                 self?.pendingSavedItemIDs.remove(item.itemId)
+                self?.watchlistMessage = "Added to watchlist"
             }
         }
+        remainingApiCalls = service.remainingApiCalls()
     }
 
 
