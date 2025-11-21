@@ -110,7 +110,7 @@ class UnogsService {
         }.resume()
     }
 
-      func fetchCatalogItemAvailability(itemId: String, completion: @escaping ([CountryAvailability]) -> Void) {
+      func fetchCatalogItemAvailability(itemId: String, countTowardsUsage: Bool = true, completion: @escaping ([CountryAvailability]) -> Void) {
         guard let url = URL(string: "https://unogs-unogs-v1.p.rapidapi.com/title/countries?netflix_id=\(itemId)") else {
             completion([])
             return
@@ -127,7 +127,9 @@ class UnogsService {
         request.setValue(apiKey, forHTTPHeaderField: "x-rapidapi-key")
         request.setValue(apiHost, forHTTPHeaderField: "x-rapidapi-host")
 
-        incrementApiCallCount()
+        if countTowardsUsage {
+            incrementApiCallCount()
+        }
 
         URLSession.shared.dataTask(with: request) { data, response, error in
             guard let data = data, error == nil else {

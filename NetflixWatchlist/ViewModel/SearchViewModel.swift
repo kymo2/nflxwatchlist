@@ -57,16 +57,32 @@ class SearchViewModel: ObservableObject {
     }
 
     func fetchAvailability(for catalogItem: CatalogItem) {
-        service.fetchCatalogItemAvailability(itemId: catalogItem.itemId) { [weak self] availability in
+        if let cachedAvailability = catalogItem.availability, !cachedAvailability.isEmpty {
+            DispatchQueue.main.async {
+                self.selectedAvailability = cachedAvailability
+            }
+            return
+        }
+
+        // Do not trigger a network request or consume API counts for watchlist items
+        if catalogItem.isSavedItem {
+            DispatchQueue.main.async {
+                self.selectedAvailability = catalogItem.availability ?? []
+            }
+            return
+        }
+
+        service.fetchCatalogItemAvailability(itemId: catalogItem.itemId, countTowardsUsage: true) { [weak self] availability in
             DispatchQueue.main.async {
                 self?.selectedAvailability = availability
+                self?.remainingApiCalls = self?.service.remainingApiCalls() ?? 0
             }
         }
         remainingApiCalls = service.remainingApiCalls()
     }
 
     func saveToWatchlist(item: CatalogItem) {
-        print("🌍 Fetching country availability before saving \(item.title)")
+        print("🌍 Preparing to save \(item.title) with cached availability")
 
         guard !isItemSaved(item) else {
             return
