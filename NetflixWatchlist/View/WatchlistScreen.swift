@@ -14,7 +14,7 @@ struct WatchlistScreen: View {
         VStack {
             List {
                 ForEach(watchlistViewModel.savedItems, id: \.objectID) { item in
-                    NavigationLink(destination: CatalogDetailScreen(catalogItem: item.toCatalogItem())) {
+                    NavigationLink(destination: CatalogDetailScreen(catalogItem: item.toCatalogItem(), source: .watchlist)) {
                         HStack {
                             AsyncImage(url: URL(string: item.img ?? "")) { image in
                                 image

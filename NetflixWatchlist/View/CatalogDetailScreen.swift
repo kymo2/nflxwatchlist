@@ -9,6 +9,7 @@ import SwiftUI
 
 struct CatalogDetailScreen: View {
     let catalogItem: CatalogItem
+    let source: SearchViewModel.DetailSource
     @EnvironmentObject var viewModel: SearchViewModel
 
     var body: some View {

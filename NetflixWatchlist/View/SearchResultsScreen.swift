@@ -18,7 +18,7 @@ struct SearchResultsScreen: View {
                 .fontWeight(.semibold)
 
             List(viewModel.searchResults, id: \.itemId) { item in
-                NavigationLink(destination: CatalogDetailScreen(catalogItem: item)) {
+                NavigationLink(destination: CatalogDetailScreen(catalogItem: item, source: .search)) {
                     HStack {
                         AsyncImage(url: URL(string: item.img)) { image in
                             image
