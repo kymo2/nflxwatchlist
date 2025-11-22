@@ -77,6 +77,7 @@ class SearchViewModel: ObservableObject {
                 self?.selectedAvailability = availability
                 self?.remainingApiCalls = self?.service.remainingApiCalls() ?? 0
             }
+            return
         }
         remainingApiCalls = service.remainingApiCalls()
     }
@@ -92,7 +93,15 @@ class SearchViewModel: ObservableObject {
 
         service.fetchCatalogItemAvailability(itemId: item.itemId) { [weak self] availability in
             DispatchQueue.main.async {
-                print("✅ Retrieved \(availability.count) country availability records for \(item.title)")
+                self.selectedAvailability = []
+            }
+            return
+        }
+
+        service.fetchCatalogItemAvailability(itemId: catalogItem.itemId, countTowardsUsage: true) { [weak self] availability in
+            guard let self else { return }
+
+            self.availabilityCache[catalogItem.itemId] = availability
 
                 self?.coreDataManager.saveCatalogItem(item: item, availability: availability) // ✅ Save movie + country data
                 self?.fetchSavedItems() // ✅ Refresh saved items after saving
@@ -101,6 +110,24 @@ class SearchViewModel: ObservableObject {
             }
         }
         remainingApiCalls = service.remainingApiCalls()
+    }
+
+    func saveToWatchlist(item: CatalogItem) {
+        print("🌍 Preparing to save \(item.title) with cached availability")
+
+        guard !isItemSaved(item) else {
+            return
+        }
+
+        pendingSavedItemIDs.insert(item.itemId)
+
+        let cachedAvailability = item.availability
+            ?? availabilityCache[item.itemId]
+            ?? selectedAvailability
+
+        coreDataManager.saveCatalogItem(item: item, availability: cachedAvailability)
+        fetchSavedItems()
+        pendingSavedItemIDs.remove(item.itemId)
     }
 
 
