@@ -20,17 +20,31 @@ class SearchViewModel: ObservableObject {
     private let service = UnogsService()
     private let coreDataManager = CoreDataManager.shared
 
+    // ✅ Needed for all your availabilityCache lookups
+    private var availabilityCache: [String: [CountryAvailability]] = [:]
+
     init() {
         fetchSavedItems()
         remainingApiCalls = service.remainingApiCalls()
     }
 
     func searchCatalog(title: String) {
+        let trimmedTitle = title.trimmingCharacters(in: .whitespacesAndNewlines)
+        guard !trimmedTitle.isEmpty else {
+            DispatchQueue.main.async {
+                self.errorMessage = ""
+                self.searchResults = []
+            }
+            return
+        }
+
         DispatchQueue.main.async {
             self.searchResults = []
         }
 
-        service.searchCatalogItems(title: title) { result in
+        service.searchCatalogItems(title: trimmedTitle) { [weak self] result in
+            guard let self = self else { return }
+
             DispatchQueue.main.async {
                 switch result {
                 case .success(let items):
@@ -45,18 +59,22 @@ class SearchViewModel: ObservableObject {
                     case .networkError(let message):
                         self.errorMessage = "Network error: \(message)"
                     case .emptyResults:
-                        self.errorMessage = "No results found for \"\(title)\"."
+                        self.errorMessage = "No results found for \"\(trimmedTitle)\"."
                     case .decodingError(let message):
                         self.errorMessage = "Failed to process data: \(message)"
                     }
-//                    self.searchResults = []
                 }
+
+                self.remainingApiCalls = self.service.remainingApiCalls()
             }
         }
+
+        // This is optional; keeps UI in sync immediately
         remainingApiCalls = service.remainingApiCalls()
     }
 
     func fetchAvailability(for catalogItem: CatalogItem) {
+        // Use cached availability on the CatalogItem itself if present
         if let cachedAvailability = catalogItem.availability, !cachedAvailability.isEmpty {
             DispatchQueue.main.async {
                 self.selectedAvailability = cachedAvailability
@@ -73,50 +91,50 @@ class SearchViewModel: ObservableObject {
         }
 
         service.fetchCatalogItemAvailability(itemId: catalogItem.itemId, countTowardsUsage: true) { [weak self] availability in
+            guard let self = self else { return }
+
             DispatchQueue.main.async {
-                self?.selectedAvailability = availability
-                self?.remainingApiCalls = self?.service.remainingApiCalls() ?? 0
+                self.selectedAvailability = availability
+                self.remainingApiCalls = self.service.remainingApiCalls()
             }
+
+            // Cache for later use (e.g., saving to watchlist)
+            self.availabilityCache[catalogItem.itemId] = availability
         }
-        remainingApiCalls = service.remainingApiCalls()
     }
 
+    // ✅ Single, clean implementation of saveToWatchlist
     func saveToWatchlist(item: CatalogItem) {
-        print("🌍 Preparing to save \(item.title) with cached availability")
-
-        guard !isItemSaved(item) else {
-            return
-        }
+        guard !isItemSaved(item) else { return }
 
         pendingSavedItemIDs.insert(item.itemId)
 
-        service.fetchCatalogItemAvailability(itemId: item.itemId) { [weak self] availability in
-            DispatchQueue.main.async {
-                print("✅ Retrieved \(availability.count) country availability records for \(item.title)")
+        let cachedAvailability = item.availability
+            ?? availabilityCache[item.itemId]
+            ?? selectedAvailability
 
-                self?.coreDataManager.saveCatalogItem(item: item, availability: availability) // ✅ Save movie + country data
-                self?.fetchSavedItems() // ✅ Refresh saved items after saving
-                self?.pendingSavedItemIDs.remove(item.itemId)
-                self?.watchlistMessage = "Added to watchlist"
-            }
+        DispatchQueue.main.async {
+            self.coreDataManager.saveCatalogItem(item: item, availability: cachedAvailability)
+            self.fetchSavedItems()
+            self.pendingSavedItemIDs.remove(item.itemId)
+            self.watchlistMessage = "Added to watchlist"
         }
-        remainingApiCalls = service.remainingApiCalls()
     }
 
-
-
     func fetchSavedItems() {
-        savedItems = coreDataManager.fetchSavedItems()
-        let savedIDs = Set(savedItems.compactMap { $0.itemId })
-        pendingSavedItemIDs.subtract(savedIDs)
+        // This should normally be on the main thread since viewContext is main-queue
+        let items = coreDataManager.fetchSavedItems()
+        DispatchQueue.main.async {
+            self.savedItems = items
 
-//        // ✅ Print to console for debugging
-//        print("🎥 Saved Movies in Core Data:")
-        for item in savedItems {
-            print("🎬 Title: \(item.title ?? "Unknown") | Netflix ID: \(item.itemId ?? "N/A")")
-            if let countrySet = item.countryAvailability as? Set<SavedCountryAvailability> {
-                for country in countrySet {
-                    print("🌍 Available in: \(country.country ?? "Unknown") (\(country.countryCode ?? ""))")
+            let savedIDs = Set(items.compactMap { $0.itemId })
+            self.pendingSavedItemIDs.subtract(savedIDs)
+
+            // Rebuild cache from saved items
+            for saved in items {
+                if let itemAvailability = saved.toCatalogItem().availability,
+                   let itemId = saved.itemId {
+                    self.availabilityCache[itemId] = itemAvailability
                 }
             }
         }
@@ -126,9 +144,14 @@ class SearchViewModel: ObservableObject {
         pendingSavedItemIDs.remove(item.itemId)
         coreDataManager.deleteSavedItem(itemId: item.itemId)
         fetchSavedItems()
+
+        DispatchQueue.main.async {
+            self.watchlistMessage = "Removed from watchlist"
+        }
     }
 
     func isItemSaved(_ item: CatalogItem) -> Bool {
-        pendingSavedItemIDs.contains(item.itemId) || savedItems.contains(where: { $0.itemId == item.itemId })
+        pendingSavedItemIDs.contains(item.itemId) ||
+        savedItems.contains(where: { $0.itemId == item.itemId })
     }
 }
