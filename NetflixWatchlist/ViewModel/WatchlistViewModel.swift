@@ -31,4 +31,9 @@ class WatchlistViewModel: ObservableObject {
         coreDataManager.deleteSavedItem(item: item)
         fetchSavedItems() // Refresh after deletion
     }
+
+    func clearWatchlist() {
+        coreDataManager.deleteAllSavedItems()
+        fetchSavedItems()
+    }
 }
