@@ -101,16 +101,22 @@ class SearchViewModel: ObservableObject {
             return
         }
 
+        // If we already have availability from a prior search-detail request,
+        // reuse it to avoid another API call when revisiting the same title.
         if let cachedAvailability = availabilityCache[itemId], !cachedAvailability.isEmpty {
             DispatchQueue.main.async {
                 self.selectedAvailability = cachedAvailability
             }
-        } else if let embeddedAvailability = catalogItem.availability, !embeddedAvailability.isEmpty {
+            return
+        }
+
+        if let embeddedAvailability = catalogItem.availability, !embeddedAvailability.isEmpty {
             availabilityCache[itemId] = embeddedAvailability
 
             DispatchQueue.main.async {
                 self.selectedAvailability = embeddedAvailability
             }
+            return
         }
 
         service.fetchCatalogItemAvailability(itemId: itemId, countTowardsUsage: true) { [weak self] availability in
