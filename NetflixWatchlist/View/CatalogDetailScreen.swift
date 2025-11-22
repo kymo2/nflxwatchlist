@@ -9,11 +9,15 @@ import SwiftUI
 
 struct CatalogDetailScreen: View {
     let catalogItem: CatalogItem
-    let source: DetailSource
+    let source: SearchViewModel.DetailSource
     @EnvironmentObject var viewModel: SearchViewModel
 
     var body: some View {
         VStack {
+            Text("Remaining API Calls: \(viewModel.remainingApiCalls)")
+                .font(.title3)
+                .fontWeight(.semibold)
+
             AsyncImage(url: URL(string: catalogItem.img)) { image in
                 image
                     .resizable()
@@ -23,8 +27,8 @@ struct CatalogDetailScreen: View {
             }
             .frame(width: 150, height: 225)
             .cornerRadius(8)
-
-            Text(catalogItem.title.decodedHTMLEntities())
+            
+            Text(catalogItem.title)
                 .font(.title)
                 .fontWeight(.bold)
 
@@ -48,7 +52,7 @@ struct CatalogDetailScreen: View {
             }
             .padding()
 
-            List(viewModel.selectedAvailability, id: \.countryCode) { country in
+            List(viewModel.selectedAvailability, id: \ .countryCode) { country in
                 HStack {
                     Text("\(country.country) (\(country.countryCode))")
                     Spacer()
@@ -59,8 +63,6 @@ struct CatalogDetailScreen: View {
         .navigationTitle("Title Details")
         .onAppear {
             viewModel.fetchSavedItems()
-
-            viewModel.fetchAvailability(for: catalogItem, source: source)
         }
     }
 }
