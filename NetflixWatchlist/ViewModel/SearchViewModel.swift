@@ -87,6 +87,7 @@ class SearchViewModel: ObservableObject {
         if source == .watchlist {
             let savedAvailability = catalogItem.availability
                 ?? availabilityCache[itemId]
+                ?? availabilityFromSavedItem(id: itemId)
                 ?? []
 
             if !savedAvailability.isEmpty {
@@ -196,5 +197,19 @@ class SearchViewModel: ObservableObject {
             updatedItem.availability = availability
             return updatedItem
         }
+    }
+
+    private func availabilityFromSavedItem(id: String) -> [CountryAvailability]? {
+        if let savedMatch = savedItems.first(where: { $0.itemId == id }) {
+            return savedMatch.toCatalogItem().availability
+        }
+
+        // Fallback to a direct fetch in case the in-memory list is stale
+        let persisted = coreDataManager.fetchSavedItems()
+        if let savedMatch = persisted.first(where: { $0.itemId == id }) {
+            return savedMatch.toCatalogItem().availability
+        }
+
+        return nil
     }
 }
