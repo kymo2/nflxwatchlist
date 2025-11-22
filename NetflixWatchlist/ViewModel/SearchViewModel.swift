@@ -130,6 +130,24 @@ class SearchViewModel: ObservableObject {
         pendingSavedItemIDs.remove(item.itemId)
     }
 
+    func saveToWatchlist(item: CatalogItem) {
+        print("🌍 Preparing to save \(item.title) with cached availability")
+
+        guard !isItemSaved(item) else {
+            return
+        }
+
+        pendingSavedItemIDs.insert(item.itemId)
+
+        let cachedAvailability = item.availability
+            ?? availabilityCache[item.itemId]
+            ?? selectedAvailability
+
+        coreDataManager.saveCatalogItem(item: item, availability: cachedAvailability)
+        fetchSavedItems()
+        pendingSavedItemIDs.remove(item.itemId)
+    }
+
 
 
     func fetchSavedItems() {
