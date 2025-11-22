@@ -130,6 +130,9 @@ class SearchViewModel: ObservableObject {
                 self.remainingApiCalls = self.service.remainingApiCalls()
                 self.updateSearchResultAvailability(itemId: itemId, availability: availability)
             }
+
+            // Cache for later use (e.g., saving to watchlist)
+            self.availabilityCache[catalogItem.itemId] = availability
         }
     }
 
