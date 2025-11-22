@@ -10,6 +10,7 @@ struct CatalogItem: Decodable {
     let title: String
     let img: String
     let synopsis: String
-    
+
     var availability: [CountryAvailability]? = nil
+    var isSavedItem: Bool = false
 }
