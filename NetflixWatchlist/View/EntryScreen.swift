@@ -14,9 +14,9 @@ struct EntryScreen: View {
     var body: some View {
         VStack {
             Spacer()
-            
+
             Text("Remaining API Calls: \(viewModel.remainingApiCalls)")
-                .font(.title2)
+                .font(.subheadline)
                 .fontWeight(.semibold)
 
 

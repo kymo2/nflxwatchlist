@@ -14,7 +14,7 @@ struct SearchResultsScreen: View {
         VStack {
             
             Text("Remaining API Calls: \(viewModel.remainingApiCalls)")
-                .font(.title3)
+                .font(.subheadline)
                 .fontWeight(.semibold)
 
             List(viewModel.searchResults, id: \.itemId) { item in

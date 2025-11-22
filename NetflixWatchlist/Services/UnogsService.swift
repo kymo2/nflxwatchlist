@@ -38,7 +38,7 @@ class UnogsService {
     private func resetApiCountIfNewDay() {
         let lastResetDate = userDefaults.object(forKey: lastResetDateKey) as? Date ?? Date.distantPast
         var calendar = Calendar(identifier: .gregorian)
-        if let pacificTimeZone {
+        if let pacificTimeZone = pacificTimeZone {
             calendar.timeZone = pacificTimeZone
         }
 
