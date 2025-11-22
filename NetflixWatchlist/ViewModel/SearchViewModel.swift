@@ -26,11 +26,22 @@ class SearchViewModel: ObservableObject {
     }
 
     func searchCatalog(title: String) {
+        let trimmedTitle = title.trimmingCharacters(in: .whitespacesAndNewlines)
+        guard !trimmedTitle.isEmpty else {
+            DispatchQueue.main.async {
+                self.errorMessage = ""
+                self.searchResults = []
+            }
+            return
+        }
+
         DispatchQueue.main.async {
             self.searchResults = []
         }
 
-        service.searchCatalogItems(title: title) { result in
+        service.searchCatalogItems(title: trimmedTitle) { [weak self] result in
+            guard let self = self else { return }
+
             DispatchQueue.main.async {
                 switch result {
                 case .success(let items):
@@ -45,12 +56,14 @@ class SearchViewModel: ObservableObject {
                     case .networkError(let message):
                         self.errorMessage = "Network error: \(message)"
                     case .emptyResults:
-                        self.errorMessage = "No results found for \"\(title)\"."
+                        self.errorMessage = "No results found for \"\(trimmedTitle)\"."
                     case .decodingError(let message):
                         self.errorMessage = "Failed to process data: \(message)"
                     }
-//                    self.searchResults = []
                 }
+
+                self.remainingApiCalls = self.service.remainingApiCalls()
+                self.refreshSavedFlags()
             }
         }
         remainingApiCalls = service.remainingApiCalls()
@@ -148,21 +161,28 @@ class SearchViewModel: ObservableObject {
         pendingSavedItemIDs.remove(item.itemId)
     }
 
+    func saveToWatchlist(item: CatalogItem) {
+        guard !isItemSaved(item) else { return }
 
+        pendingSavedItemIDs.insert(item.itemId)
+
+        let cachedAvailability = item.availability
+            ?? availabilityCache[item.itemId]
+            ?? selectedAvailability
+
+        coreDataManager.saveCatalogItem(item: item, availability: cachedAvailability)
+        fetchSavedItems()
+        pendingSavedItemIDs.remove(item.itemId)
+    }
 
     func fetchSavedItems() {
         savedItems = coreDataManager.fetchSavedItems()
         let savedIDs = Set(savedItems.compactMap { $0.itemId })
         pendingSavedItemIDs.subtract(savedIDs)
 
-//        // ✅ Print to console for debugging
-//        print("🎥 Saved Movies in Core Data:")
-        for item in savedItems {
-            print("🎬 Title: \(item.title ?? "Unknown") | Netflix ID: \(item.itemId ?? "N/A")")
-            if let countrySet = item.countryAvailability as? Set<SavedCountryAvailability> {
-                for country in countrySet {
-                    print("🌍 Available in: \(country.country ?? "Unknown") (\(country.countryCode ?? ""))")
-                }
+        for saved in savedItems {
+            if let itemAvailability = saved.toCatalogItem().availability, let itemId = saved.itemId {
+                availabilityCache[itemId] = itemAvailability
             }
         }
     }
