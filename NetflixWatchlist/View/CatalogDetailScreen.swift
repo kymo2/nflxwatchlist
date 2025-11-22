@@ -48,7 +48,7 @@ struct CatalogDetailScreen: View {
             }
             .padding()
 
-            List(viewModel.selectedAvailability, id: \.countryCode) { country in
+            List(viewModel.selectedAvailability, id: \ .countryCode) { country in
                 HStack {
                     Text("\(country.country) (\(country.countryCode))")
                     Spacer()
