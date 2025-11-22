@@ -28,9 +28,6 @@ class SearchViewModel: ObservableObject {
     private let service = UnogsService()
     private let coreDataManager = CoreDataManager.shared
 
-    // ✅ Needed for all your availabilityCache lookups
-    private var availabilityCache: [String: [CountryAvailability]] = [:]
-
     init() {
         fetchSavedItems()
         remainingApiCalls = service.remainingApiCalls()
@@ -84,9 +81,10 @@ class SearchViewModel: ObservableObject {
         source: DetailSource = .search
     ) {
         let itemId = catalogItem.itemId
-        let shouldUseSavedData = source == .watchlist
 
-        if shouldUseSavedData {
+        // Prefer saved or cached data for watchlist-driven detail screens so they never
+        // trigger an API call or decrement the counter.
+        if source == .watchlist {
             let savedAvailability = catalogItem.availability
                 ?? availabilityCache[itemId]
                 ?? []
@@ -101,15 +99,8 @@ class SearchViewModel: ObservableObject {
             return
         }
 
-        // If we already have availability from a prior search-detail request,
-        // reuse it to avoid another API call when revisiting the same title.
-        if let cachedAvailability = availabilityCache[itemId], !cachedAvailability.isEmpty {
-            DispatchQueue.main.async {
-                self.selectedAvailability = cachedAvailability
-            }
-            return
-        }
-
+        // Reuse any availability we already have for search-driven navigations to avoid
+        // accidental double-counts when revisiting the same title.
         if let embeddedAvailability = catalogItem.availability, !embeddedAvailability.isEmpty {
             availabilityCache[itemId] = embeddedAvailability
 
@@ -119,6 +110,15 @@ class SearchViewModel: ObservableObject {
             return
         }
 
+        if let cachedAvailability = availabilityCache[itemId], !cachedAvailability.isEmpty {
+            DispatchQueue.main.async {
+                self.selectedAvailability = cachedAvailability
+            }
+            return
+        }
+
+        // At this point we have no cached or embedded availability data, and we're in the
+        // search flow, so the network request (and its API count) is intentional.
         service.fetchCatalogItemAvailability(itemId: itemId, countTowardsUsage: true) { [weak self] availability in
             guard let self = self else { return }
 
