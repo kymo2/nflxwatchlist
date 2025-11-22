@@ -61,7 +61,6 @@ struct CatalogDetailScreen: View {
         }
         .navigationTitle("Title Details")
         .onAppear {
-            viewModel.fetchAvailability(for: catalogItem)
             viewModel.fetchSavedItems()
         }
     }
